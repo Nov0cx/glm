@@ -360,6 +360,18 @@
 #	define GLM_HAS_BITSCAN_WINDOWS 0
 #endif
 
+#if GLM_LANG & GLM_LANG_CXX11_FLAG
+#	define GLM_HAS_NOEXCEPT 1
+#else
+#	define GLM_HAS_NOEXCEPT 0
+#endif
+
+#if GLM_HAS_NOEXCEPT
+#	define GLM_NOEXCEPT noexcept
+#else
+#	define GLM_NOEXCEPT
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////////
 // OpenMP
 #ifdef _OPENMP
@@ -423,9 +435,23 @@
 ///////////////////////////////////////////////////////////////////////////////////
 // Qualifiers
 
+// User defines: GLM_CUDA_FORCE_DEVICE_FUNC, GLM_CUDA_FORCE_HOST_FUNC
+
 #if (GLM_COMPILER & GLM_COMPILER_CUDA) || (GLM_COMPILER & GLM_COMPILER_HIP)
-#	define GLM_CUDA_FUNC_DEF __device__ __host__
-#	define GLM_CUDA_FUNC_DECL __device__ __host__
+#	if defined(GLM_CUDA_FORCE_DEVICE_FUNC) && defined(GLM_CUDA_FORCE_HOST_FUNC)
+#		error "GLM error: GLM_CUDA_FORCE_DEVICE_FUNC and GLM_CUDA_FORCE_HOST_FUNC should not be defined at the same time, GLM by default generates both device and host code for CUDA compiler."
+#	endif//defined(GLM_CUDA_FORCE_DEVICE_FUNC) && defined(GLM_CUDA_FORCE_HOST_FUNC)
+
+#	if defined(GLM_CUDA_FORCE_DEVICE_FUNC)
+#		define GLM_CUDA_FUNC_DEF __device__
+#		define GLM_CUDA_FUNC_DECL __device__
+#	elif defined(GLM_CUDA_FORCE_HOST_FUNC)
+#		define GLM_CUDA_FUNC_DEF __host__
+#		define GLM_CUDA_FUNC_DECL __host__
+#	else
+#		define GLM_CUDA_FUNC_DEF __device__ __host__
+#		define GLM_CUDA_FUNC_DECL __device__ __host__
+#	endif//defined(GLM_CUDA_FORCE_XXXX_FUNC)
 #else
 #	define GLM_CUDA_FUNC_DEF
 #	define GLM_CUDA_FUNC_DECL
@@ -452,6 +478,22 @@
 
 #define GLM_FUNC_DECL GLM_CUDA_FUNC_DECL
 #define GLM_FUNC_QUALIFIER GLM_CUDA_FUNC_DEF GLM_INLINE
+
+// Do not use CUDA function qualifiers on CUDA compiler when functions are made default
+#if GLM_HAS_DEFAULTED_FUNCTIONS
+#	define GLM_DEFAULTED_FUNC_DECL
+#	define GLM_DEFAULTED_FUNC_QUALIFIER GLM_INLINE
+#else
+#	define GLM_DEFAULTED_FUNC_DECL GLM_FUNC_DECL
+#	define GLM_DEFAULTED_FUNC_QUALIFIER GLM_FUNC_QUALIFIER
+#endif//GLM_HAS_DEFAULTED_FUNCTIONS
+#if !defined(GLM_FORCE_CTOR_INIT)
+#	define GLM_DEFAULTED_DEFAULT_CTOR_DECL GLM_DEFAULTED_FUNC_DECL
+#	define GLM_DEFAULTED_DEFAULT_CTOR_QUALIFIER GLM_DEFAULTED_FUNC_QUALIFIER
+#else
+#	define GLM_DEFAULTED_DEFAULT_CTOR_DECL GLM_FUNC_DECL
+#	define GLM_DEFAULTED_DEFAULT_CTOR_QUALIFIER GLM_FUNC_QUALIFIER
+#endif//GLM_FORCE_CTOR_INIT
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Swizzle operators
